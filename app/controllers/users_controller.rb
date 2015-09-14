@@ -1,6 +1,5 @@
 class UsersController < AccessController
   before_action :authenticate, only: [:show, :edit, :update, :destroy]
-
   # GET /users
   # GET /users.json
   def index
@@ -27,16 +26,14 @@ class UsersController < AccessController
   def create
     @user = User.new(user_params)
     if User.exists?(username: @user.username) || User.exists?(email: @user.email)
-        format.html { render :new }
-        format.json { render json: @user.errors, status: :unprocessable_entity }
+       render :template=>"users/error.json.jbuilder",locals:{message: "Username or Email already exists"},:success => true, :status => :ok ,:formats => [:json]
     else
     respond_to do |format|
       if @user.save
         format.html { redirect_to @user, notice: 'User was successfully created.' }
         format.json { render :show, status: :created, location: @user }
       else
-        format.html { render :new }
-        format.json { render json: @user.errors, status: :unprocessable_entity }
+        render :template=>"users/error.json.jbuilder",locals:{message: "An error occured"},:success => true, :status => :ok ,:formats => [:json]
       end
     end
     end
@@ -47,12 +44,11 @@ class UsersController < AccessController
   def update
     @user = User.find(current_user.id)
     respond_to do |format|
-    if @user.update_attributes(user_params)
+    if @user.update_attributes(params.require(:user).permit(:email,:password))
         format.html { redirect_to @user, notice: 'User was successfully updated.' }
         format.json { render :show, status: :ok, location: @user }
     else
-        format.html { render :edit }
-        format.json { render json: @user.errors, status: :unprocessable_entity }
+         render :template=>"users/error.json.jbuilder",locals:{message: "Invalid"},:success => true, :status => :ok ,:formats => [:json]
     end  
     end
   end
@@ -66,6 +62,18 @@ class UsersController < AccessController
       format.json { head :no_content }
     end
   end
+
+   def login
+      #authenticate_or_request_with_http_basic do |username, password|
+       #Rails.logger.info "API authentication:#{username} #{password}"
+        if User.exists?(username: params[:username], password: params[:password])
+         @user = User.find_by_username(params[:username])
+         render :template=>"users/show.json.jbuilder", :status=> :ok, localion:@user,:formats => [:json]
+        else
+          render :template=>"users/error.json.jbuilder",locals:{message: "Wrong Username or Password"},:success => true, :status => :ok ,:formats => [:json]
+        end   
+    end 
+
 
   private
     # Use callbacks to share common setup or constraints between actions.

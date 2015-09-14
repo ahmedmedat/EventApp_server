@@ -15,9 +15,9 @@ ActiveRecord::Schema.define(version: 20150909213713) do
 
   create_table "events", force: :cascade do |t|
     t.string   "name",        limit: 100
-    t.integer  "date"
+    t.integer  "date",        limit: 8
     t.text     "description",             default: "", null: false
-    t.text     "location",    limit: 100
+    t.text     "location"
     t.string   "username",    limit: 50
     t.datetime "created_at"
     t.datetime "updated_at"

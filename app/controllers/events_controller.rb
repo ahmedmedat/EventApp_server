@@ -1,6 +1,5 @@
 class EventsController < AccessController
   before_action :authenticate
-
   # GET /events
   # GET /events.json
   def index
@@ -14,9 +13,20 @@ class EventsController < AccessController
   end
 
   # GET /events/1
-  # GET /events/1.json
+  # GET /events/1.json 
   def show
-    event = Event.find(params[:id])
+  end
+
+  def watch
+     @event = Event.find_by_name(params[:name])
+    # @event = Event.find(params[:id])
+    render :template=>"events/show.json.jbuilder", :status=> :ok, :formats => [:json]
+
+  end
+
+  def search
+    @event = Event.where(name: params[:name])
+    render :template=>"events/index.json.jbuilder", :status=> :ok, locals: { events: @event}, :formats => [:json]
   end
     
   
@@ -27,7 +37,7 @@ class EventsController < AccessController
       @u <<j.event_id
     end  
       @event= Event.where(id: @u).where.not(username:current_user.username)
-    render :template=>"events/index.json.jbuilder", :status=> :ok, locals: { events: @event}, :formats => [:json]
+      render :template=>"events/index.json.jbuilder", :status=> :ok, locals: { events: @event}, :formats => [:json]
    
   end
 
@@ -38,14 +48,14 @@ class EventsController < AccessController
   
 
   def going
-    @event = Event.find_by_name(params[:name])
+    @event = Event.find(params[:id])
     if UserEvent.exists?(user_id: current_user.id, event_id: @event.id)
-      #render :template=>"events/index.json.jbuilder", :status=> :ok, locals: { events: @event}, :formats => [:json]
+      render :template=>"events/message.json.jbuilder",locals:{message: "you already joined"},:success => true, :status => :ok ,:formats => [:json]
     else
       @j = UserEvent.new
       @event.user_events << @j
       current_user.user_events << @j
-      #render :template=>"events/index.json.jbuilder", :status=> :ok, locals: { events: @event}, :formats => [:json]
+      render :template=>"events/message.json.jbuilder",locals:{message: "you are welcome"},:success => true, :status => :ok ,:formats => [:json]
     end
   end
 
@@ -73,38 +83,36 @@ class EventsController < AccessController
       format.html { redirect_to event, notice: 'Event was successfully created.' }
       format.json { render :show, status: :created, location: @event }
     else
-      format.html { render :new }
-      format.json { render json: @event.errors, status: :unprocessable_entity }
+      render :template=>"events/message.json.jbuilder",locals:{message: "an error occurred"},:success => true, :status => :ok ,:formats => [:json]      
     end 
     end
   end
 
-  # PATCH/PUT /events/1
-  # PATCH/PUT /events/1.json
+  # PATCH/PUT /event_update
+  # PATCH/PUT /event_update.json
   def update
       @event = Event.find(params[:id])
-    respond_to do |format|
     if Event.exists?(username: current_user.username , id: @event.id)
-      format.json { render json: @event.errors, status: :unprocessable_entity }
+       if @event.update(event_params)
+        render :template=>"events/show.json.jbuilder", :status=> :ok, :formats => [:json]
+       else
+        render :template=>"events/message.json.jbuilder",locals:{message: "an error occurred"},:success => true, :status => :ok ,:formats => [:json]      
+       end
     else
-     if @event.update(event_params)
-       format.html { redirect_to @event, notice: 'Event was successfully updated.' }
-        format.json { render :show, status: :ok, location: @event }
-     else
-        format.html { render :edit }
-        format.json { render json: @event.errors, status: :unprocessable_entity }
-     end
-     end
-   end
+      render :template=>"events/message.json.jbuilder",locals:{message: "an error occurred"},:success => true, :status => :ok ,:formats => [:json]        
+    end
+
   end
 
-  # DELETE /events/1
-  # DELETE /events/1.json
+  # DELETE /event_delete
+  # DELETE /event_delete.json
   def destroy
+    @event = Event.find(params[:id])
+    if Event.exists?(username: current_user.username , id: @event.id)
     @event.destroy
-    respond_to do |format|
-      format.html { redirect_to events_url, notice: 'Event was successfully destroyed.' }
-      format.json { head :no_content }
+    render :template=>"events/message.json.jbuilder",locals:{message: "successfully deleted"},:success => true, :status => :ok ,:formats => [:json]      
+    else
+     render :template=>"events/message.json.jbuilder",locals:{message: "an error occurred"},:success => true, :status => :ok ,:formats => [:json]      
     end
   end
 
